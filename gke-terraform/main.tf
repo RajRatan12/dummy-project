@@ -41,7 +41,6 @@ resource "google_container_node_pool" "primary_nodes" {
     oauth_scopes    = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
-    # Set resource_labels explicitly as an empty map to avoid unexpected changes.
     resource_labels = {}
   }
 
@@ -49,14 +48,8 @@ resource "google_container_node_pool" "primary_nodes" {
 
   lifecycle {
     ignore_changes = [
-      # Ignore changes to these nested fields so that Terraform doesn't try to update them.
       node_config[0].kubelet_config,
       node_config[0].resource_labels,
     ]
   }
-}
-
-output "cluster_name" {
-  description = "The name of the GKE cluster"
-  value       = google_container_cluster.primary.name
 }
