@@ -36,12 +36,27 @@ resource "google_container_node_pool" "primary_nodes" {
   location   = google_container_cluster.primary.location
 
   node_config {
-    machine_type = "e2-micro"
-    disk_size_gb = 30
-    oauth_scopes = [
+    machine_type    = "e2-micro"
+    disk_size_gb    = 30
+    oauth_scopes    = [
       "https://www.googleapis.com/auth/cloud-platform",
     ]
+    # Set resource_labels explicitly as an empty map to avoid unexpected changes.
+    resource_labels = {}
   }
 
   initial_node_count = 1
+
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to these nested fields so that Terraform doesn't try to update them.
+      node_config[0].kubelet_config,
+      node_config[0].resource_labels,
+    ]
+  }
+}
+
+output "cluster_name" {
+  description = "The name of the GKE cluster"
+  value       = google_container_cluster.primary.name
 }
