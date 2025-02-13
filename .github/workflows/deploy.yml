@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+       
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+       
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+       
+      - name: Build Docker image
+        run: |
+          docker build -t hello-raj-app .
+
+       
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+       
+      - name: Tag and Push Docker Image
+        run: |
+          docker tag hello-raj-app gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest
+
+       
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.2.0"   
+
+       
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
+
+       
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
+
+      
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+      
+      - name: Deploy Application with Helm
+        run: |
+          helm upgrade --install hello-raj-app helm-chart/hello-raj-app \
+            --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app \
+            --set image.tag=latest
