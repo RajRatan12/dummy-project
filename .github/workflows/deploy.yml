@@ -10,64 +10,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-       
+      # 1. Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-       
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-       
-      - name: Build Docker image
-        run: |
-          docker build -t hello-raj-app .
-
-       
+      # 2. Authenticate to Google Cloud
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      
+      # 3. Configure Docker to use GCR
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
-       
-      - name: Tag and Push Docker Image
+      # 4. Build & Push Docker Image
+      - name: Build and Push Docker Image
         run: |
-          docker tag hello-raj-app gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest
 
-       
+      # 5. Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: "1.2.0"   
 
-       
+      # 6. Initialize Terraform
       - name: Terraform Init
         working-directory: terraform
         run: terraform init
 
-      
+      # 7. Plan Terraform Changes
       - name: Terraform Plan
         working-directory: terraform
         run: terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-       
+      # 8. Apply Terraform Configuration
       - name: Terraform Apply
         working-directory: terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      
+      # 9. Install Helm
       - name: Install Helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-      
+      # 10. Deploy Application with Helm
       - name: Deploy Application with Helm
         run: |
           helm upgrade --install hello-raj-app helm-chart/hello-raj-app \
