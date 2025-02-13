@@ -34,7 +34,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 6. Initialize Terraform within the gke-terraform directory
+      # 6. Initialize Terraform in the gke-terraform directory
       - name: Terraform Init
         working-directory: gke-terraform
         run: terraform init
@@ -49,12 +49,16 @@ jobs:
         working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 9. Install GKE Auth Plugin using apt-get
-      - name: Install GKE Auth Plugin via apt-get
+      # 9. Install GKE Auth Plugin manually by downloading it from GitHub releases
+      - name: Install GKE Auth Plugin
         run: |
-          sudo apt-get update && sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
+          # Download the plugin archive (update the version if necessary)
+          curl -Lo gke-gcloud-auth-plugin.tar.gz https://github.com/GoogleCloudPlatform/gke-gcloud-auth-plugin/releases/download/v0.8.0/gke-gcloud-auth-plugin-linux-amd64.tar.gz
+          tar -xzf gke-gcloud-auth-plugin.tar.gz
+          chmod +x gke-gcloud-auth-plugin
+          sudo mv gke-gcloud-auth-plugin /usr/local/bin/
 
-      # 10. Get GKE cluster credentials so Helm can connect to the cluster
+      # 10. Retrieve GKE cluster credentials so that Helm can communicate with your cluster
       - name: Get GKE Cluster Credentials
         run: |
           gcloud container clusters get-credentials hello-raj-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
@@ -64,7 +68,7 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-      # 12. Deploy application with Helm
+      # 12. Deploy the application with Helm
       - name: Deploy Application with Helm
         run: |
           helm upgrade --install hello-raj-app helm-chart/hello-raj-app \
