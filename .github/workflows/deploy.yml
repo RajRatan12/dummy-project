@@ -34,19 +34,19 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 6. Initialize Terraform
+      # 6. Initialize Terraform (using the gke-terraform folder)
       - name: Terraform Init
-        working-directory: terraform
+        working-directory: gke-terraform
         run: terraform init
 
       # 7. Plan Terraform Changes
       - name: Terraform Plan
-        working-directory: terraform
+        working-directory: gke-terraform
         run: terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
       # 8. Apply Terraform Configuration
       - name: Terraform Apply
-        working-directory: terraform
+        working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
       # 9. Install Helm
