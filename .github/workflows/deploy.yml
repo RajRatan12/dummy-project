@@ -20,7 +20,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # 3. Configure Docker to authenticate with GCR
+      # 3. Configure Docker for GCR
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
@@ -49,9 +49,10 @@ jobs:
         working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 9. Install the GKE gcloud auth plugin (required for cluster credentials)
-      - name: Install GKE Auth Plugin
-        run: gcloud components install gke-gcloud-auth-plugin -q
+      # 9. Install GKE Auth Plugin using apt-get
+      - name: Install GKE Auth Plugin via apt-get
+        run: |
+          sudo apt-get update && sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin
 
       # 10. Get GKE cluster credentials so Helm can connect to the cluster
       - name: Get GKE Cluster Credentials
