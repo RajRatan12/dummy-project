@@ -14,47 +14,52 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Authenticate to Google Cloud
+      # 2. Authenticate to Google Cloud using your service account credentials
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # 3. Configure Docker to use GCR
+      # 3. Configure Docker to authenticate with GCR
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
-      # 4. Build & Push Docker Image
+      # 4. Build and push Docker image to GCR
       - name: Build and Push Docker Image
         run: |
           docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest .
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/hello-raj-app:latest
 
-      # 5. Setup Terraform
+      # 5. Setup Terraform (install Terraform)
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 6. Initialize Terraform (using the gke-terraform folder)
+      # 6. Initialize Terraform within the gke-terraform directory
       - name: Terraform Init
         working-directory: gke-terraform
         run: terraform init
 
-      # 7. Plan Terraform Changes
+      # 7. Plan Terraform changes
       - name: Terraform Plan
         working-directory: gke-terraform
         run: terraform plan -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 8. Apply Terraform Configuration
+      # 8. Apply Terraform configuration (creates/updates your GKE cluster)
       - name: Terraform Apply
         working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 9. Install Helm
+      # 9. Get GKE cluster credentials so Helm can connect to the cluster
+      - name: Get GKE Cluster Credentials
+        run: |
+          gcloud container clusters get-credentials hello-raj-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
+
+      # 10. Install Helm
       - name: Install Helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-      # 10. Deploy Application with Helm
+      # 11. Deploy application with Helm
       - name: Deploy Application with Helm
         run: |
           helm upgrade --install hello-raj-app helm-chart/hello-raj-app \
