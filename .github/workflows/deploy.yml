@@ -49,9 +49,16 @@ jobs:
         working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 9. Install GKE Auth Plugin (Fix for Kubernetes cluster unreachable error)
+      # 9. Install GKE Auth Plugin (Add the Google Cloud SDK repository first)
       - name: Install GKE Auth Plugin
         run: |
+          # Install prerequisites
+          sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          # Add the Google Cloud public signing key
+          curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+          # Add the Google Cloud SDK repository
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+          # Update package lists and install the plugin
           sudo apt-get update && sudo apt-get install -y google-cloud-sdk-gke-gcloud-auth-plugin
 
       # 10. Get GKE cluster credentials so Helm can connect to the cluster
