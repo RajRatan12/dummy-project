@@ -20,7 +20,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
-      # 3. Configure Docker for GCR
+      # 3. Configure Docker to authenticate with GCR
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 6. Initialize Terraform in the gke-terraform directory
+      # 6. Initialize Terraform within the gke-terraform directory
       - name: Terraform Init
         working-directory: gke-terraform
         run: terraform init
@@ -49,28 +49,17 @@ jobs:
         working-directory: gke-terraform
         run: terraform apply -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}" -var="region=us-central1"
 
-      # 9. Install the GKE Auth Plugin manually by downloading from GitHub releases
-      - name: Install GKE Auth Plugin
-        run: |
-          # Download the plugin archive using the "latest" endpoint
-          curl -Lo gke-gcloud-auth-plugin.tar.gz https://github.com/GoogleCloudPlatform/gke-gcloud-auth-plugin/releases/latest/download/gke-gcloud-auth-plugin-linux-amd64.tar.gz
-          # Extract the archive
-          tar -xzf gke-gcloud-auth-plugin.tar.gz
-          # Make the plugin executable and move it to a directory in PATH
-          chmod +x gke-gcloud-auth-plugin
-          sudo mv gke-gcloud-auth-plugin /usr/local/bin/
-
-      # 10. Retrieve GKE cluster credentials so Helm can connect to the cluster
+      # 9. Get GKE cluster credentials so Helm can connect to the cluster
       - name: Get GKE Cluster Credentials
         run: |
           gcloud container clusters get-credentials hello-raj-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
 
-      # 11. Install Helm
+      # 10. Install Helm
       - name: Install Helm
         run: |
           curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-      # 12. Deploy the application with Helm
+      # 11. Deploy application with Helm
       - name: Deploy Application with Helm
         run: |
           helm upgrade --install hello-raj-app helm-chart/hello-raj-app \
